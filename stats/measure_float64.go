@@ -20,7 +20,7 @@ type MeasureFloat64 struct {
 	name        string
 	unit        string
 	description string
-	views       map[View]bool
+	views       map[*View]bool
 }
 
 // NewMeasureFloat64 creates a new measure of type MeasureFloat64. It returns
@@ -30,7 +30,7 @@ func NewMeasureFloat64(name, description, unit string) (*MeasureFloat64, error) 
 		name:        name,
 		description: description,
 		unit:        unit,
-		views:       make(map[View]bool),
+		views:       make(map[*View]bool),
 	}
 	req := &registerMeasureReq{
 		m:   m,
@@ -53,11 +53,11 @@ func (m *MeasureFloat64) Unit() string {
 	return m.unit
 }
 
-func (m *MeasureFloat64) addView(v View) {
+func (m *MeasureFloat64) addView(v *View) {
 	m.views[v] = true
 }
 
-func (m *MeasureFloat64) removeView(v View) {
+func (m *MeasureFloat64) removeView(v *View) {
 	delete(m.views, v)
 }
 

@@ -20,7 +20,7 @@ type MeasureInt64 struct {
 	name        string
 	unit        string
 	description string
-	views       map[View]bool
+	views       map[*View]bool
 }
 
 // NewMeasureInt64 creates a new measure of type MeasureInt64. It returns an
@@ -30,7 +30,7 @@ func NewMeasureInt64(name, description, unit string) (*MeasureInt64, error) {
 		name:        name,
 		description: description,
 		unit:        unit,
-		views:       make(map[View]bool),
+		views:       make(map[*View]bool),
 	}
 
 	req := &registerMeasureReq{
@@ -55,11 +55,11 @@ func (m *MeasureInt64) Unit() string {
 	return m.unit
 }
 
-func (m *MeasureInt64) addView(v View) {
+func (m *MeasureInt64) addView(v *View) {
 	m.views[v] = true
 }
 
-func (m *MeasureInt64) removeView(v View) {
+func (m *MeasureInt64) removeView(v *View) {
 	delete(m.views, v)
 }
 

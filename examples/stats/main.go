@@ -71,10 +71,10 @@ func main() {
 	videoSpamCountView := stats.NewView(videoSpamName, videoSpamDesc, []tags.Key{deviceIDKey}, videoSpamCount, agg2, window)
 
 	// Register views in order to collect data.
-	if err := stats.RegisterView(videoSizeView); err != nil {
+	if err := videoSizeView.Register(); err != nil {
 		log.Fatalf("View %v cannot be registered: %v\n", videoSizeView, err)
 	}
-	if err = stats.RegisterView(videoSpamCountView); err != nil {
+	if err = videoSpamCountView.Register(); err != nil {
 		log.Fatalf("View %v cannot be registered: %v\n", videoSpamCountView, err)
 	}
 

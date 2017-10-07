@@ -24,8 +24,9 @@ type Measure interface {
 	viewsCount() int
 }
 
-// Measurement is the interface for all measurement types. Measurements are
-// required when recording stats.
+// Measurement is the numeric value measured when recording stats. Each measure
+// provides methods to create measurements of their kind. For example, MeasureInt64
+// provides M to convert an int64 into a measurement.
 type Measurement interface {
 	isMeasurement() bool
 }

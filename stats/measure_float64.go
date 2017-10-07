@@ -63,8 +63,8 @@ func (m *MeasureFloat64) removeView(v View) {
 
 func (m *MeasureFloat64) viewsCount() int { return len(m.views) }
 
-// Is creates a new measurement/datapoint of type measurementFloat64.
-func (m *MeasureFloat64) Is(v float64) Measurement {
+// M creates a new float64 measurement.
+func (m *MeasureFloat64) M(v float64) Measurement {
 	return &measurementFloat64{
 		m: m,
 		v: v,

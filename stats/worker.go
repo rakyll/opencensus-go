@@ -169,25 +169,25 @@ func RetrieveData(v View) ([]*Row, error) {
 	return resp.rows, resp.err
 }
 
-// RecordFloat64 records a float64 value against a measure and the tags passed
+// Record records a float64 value against a measure and the tags passed
 // as part of the context.
-func RecordFloat64(ctx context.Context, mf *MeasureFloat64, v float64) {
+func (m *MeasureFloat64) Record(ctx context.Context, v float64) {
 	req := &recordFloat64Req{
 		now: time.Now(),
 		ts:  tags.FromContext(ctx),
-		mf:  mf,
+		mf:  m,
 		v:   v,
 	}
 	defaultWorker.c <- req
 }
 
-// RecordInt64 records an int64 value against a measure and the tags passed as
+// Record records an int64 value against a measure and the tags passed as
 // part of the context.
-func RecordInt64(ctx context.Context, mi *MeasureInt64, v int64) {
+func (m *MeasureInt64) Record(ctx context.Context, v int64) {
 	req := &recordInt64Req{
 		now: time.Now(),
 		ts:  tags.FromContext(ctx),
-		mi:  mi,
+		mi:  m,
 		v:   v,
 	}
 	defaultWorker.c <- req

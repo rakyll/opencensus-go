@@ -20,7 +20,8 @@ type MeasureInt64 struct {
 	name        string
 	unit        string
 	description string
-	views       map[View]bool
+	// TODO(jbd): Guard views.
+	views map[View]bool
 }
 
 // NewMeasureInt64 creates a new measure of type MeasureInt64. It returns an
@@ -32,7 +33,6 @@ func NewMeasureInt64(name, description, unit string) (*MeasureInt64, error) {
 		unit:        unit,
 		views:       make(map[View]bool),
 	}
-
 	req := &registerMeasureReq{
 		m:   m,
 		err: make(chan error),
@@ -41,7 +41,6 @@ func NewMeasureInt64(name, description, unit string) (*MeasureInt64, error) {
 	if err := <-req.err; err != nil {
 		return nil, err
 	}
-
 	return m, nil
 }
 
@@ -65,12 +64,10 @@ func (m *MeasureInt64) removeView(v View) {
 
 func (m *MeasureInt64) viewsCount() int { return len(m.views) }
 
-// Is creates a new measurement/datapoint of type measurementInt64.
-func (m *MeasureInt64) Is(v int64) Measurement {
-	return &measurementInt64{
-		m: m,
-		v: v,
-	}
+// M creates a new int64 measurement.
+// Use Record to record multiple measurements.
+func (m *MeasureInt64) M(v int64) Measurement {
+	return &measurementInt64{m: m, v: v}
 }
 
 type measurementInt64 struct {
@@ -78,4 +75,4 @@ type measurementInt64 struct {
 	v int64
 }
 
-func (mi *measurementInt64) isMeasurement() bool { return true }
+func (mi *measurementInt64) isMeasurement() {}

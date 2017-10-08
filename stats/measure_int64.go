@@ -65,8 +65,8 @@ func (m *MeasureInt64) removeView(v View) {
 
 func (m *MeasureInt64) viewsCount() int { return len(m.views) }
 
-// Is creates a new measurement/datapoint of type measurementInt64.
-func (m *MeasureInt64) Is(v int64) Measurement {
+// M creates a new int64 measurement.
+func (m *MeasureInt64) M(v int64) Measurement {
 	return &measurementInt64{
 		m: m,
 		v: v,

@@ -101,8 +101,7 @@ func (ch clientHandler) TagRPC(ctx context.Context, info *stats.RPCTagInfo) cont
 	// TODO(acetechnologist): should we be recording this later? What is the
 	// point of updating d.reqLen & d.reqCount if we update now?
 	ctx = tags.NewContext(ctx, tsb.Build())
-	istats.RecordInt64(ctx, RPCClientStartedCount, 1)
-
+	RPCClientStartedCount.Record(ctx, 1)
 	return context.WithValue(ctx, grpcClientRPCKey, d)
 }
 
@@ -131,7 +130,7 @@ func (ch clientHandler) handleRPCOutPayload(ctx context.Context, s *stats.OutPay
 		return
 	}
 
-	istats.RecordInt64(ctx, RPCClientRequestBytes, int64(s.Length))
+	RPCClientRequestBytes.Record(ctx, int64(s.Length))
 	atomic.AddUint64(&d.reqCount, 1)
 }
 
@@ -144,7 +143,7 @@ func (ch clientHandler) handleRPCInPayload(ctx context.Context, s *stats.InPaylo
 		return
 	}
 
-	istats.RecordInt64(ctx, RPCClientResponseBytes, int64(s.Length))
+	RPCClientResponseBytes.Record(ctx, int64(s.Length))
 	atomic.AddUint64(&d.respCount, 1)
 }
 
@@ -159,10 +158,10 @@ func (ch clientHandler) handleRPCEnd(ctx context.Context, s *stats.End) {
 	elapsedTime := time.Since(d.startTime)
 
 	var measurements []istats.Measurement
-	measurements = append(measurements, RPCClientRequestCount.Is(int64(d.reqCount)))
-	measurements = append(measurements, RPCClientResponseCount.Is(int64(d.respCount)))
-	measurements = append(measurements, RPCClientFinishedCount.Is(1))
-	measurements = append(measurements, RPCClientRoundTripLatency.Is(float64(elapsedTime)/float64(time.Millisecond)))
+	measurements = append(measurements, RPCClientRequestCount.M(int64(d.reqCount)))
+	measurements = append(measurements, RPCClientResponseCount.M(int64(d.respCount)))
+	measurements = append(measurements, RPCClientFinishedCount.M(1))
+	measurements = append(measurements, RPCClientRoundTripLatency.M(float64(elapsedTime)/float64(time.Millisecond)))
 
 	if s.Error != nil {
 		errorCode := s.Error.Error()
@@ -171,7 +170,7 @@ func (ch clientHandler) handleRPCEnd(ctx context.Context, s *stats.End) {
 		tsb.UpsertString(keyOpStatus, errorCode)
 
 		ctx = tags.NewContext(ctx, tsb.Build())
-		measurements = append(measurements, RPCClientErrorCount.Is(1))
+		measurements = append(measurements, RPCClientErrorCount.M(1))
 	}
 
 	istats.Record(ctx, measurements...)

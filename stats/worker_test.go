@@ -665,7 +665,7 @@ func Test_Worker_RecordFloat64(t *testing.T) {
 		}
 
 		for _, value := range tc.records {
-			RecordFloat64(ctx, m, value)
+			m.Record(ctx, value)
 		}
 
 		for _, w := range tc.wants {

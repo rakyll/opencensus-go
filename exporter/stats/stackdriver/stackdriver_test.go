@@ -180,8 +180,8 @@ func TestExporter_makeReq(t *testing.T) {
 }
 
 func newTestCumViewData(v *stats.View, start, end time.Time) *stats.ViewData {
-	count1 := stats.CountAggregationValue(10)
-	count2 := stats.CountAggregationValue(16)
+	count1 := stats.CountData(10)
+	count2 := stats.CountData(16)
 	return &stats.ViewData{
 		View: v,
 		Rows: []*stats.Row{
@@ -197,7 +197,7 @@ func newTestDistViewData(v *stats.View, start, end time.Time) *stats.ViewData {
 	return &stats.ViewData{
 		View: v,
 		Rows: []*stats.Row{
-			{AggregationValue: &stats.DistributionAggregationValue{
+			{AggregationValue: &stats.DistributionData{
 				Count:           5,
 				Min:             1,
 				Max:             7,

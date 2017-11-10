@@ -152,7 +152,7 @@ type ViewData struct {
 // Row is the collected value for a specific set of key value pairs a.k.a tags.
 type Row struct {
 	Tags             []tag.Tag
-	AggregationValue AggregationValue
+	AggregationValue AggregationData
 }
 
 func (r *Row) String() string {

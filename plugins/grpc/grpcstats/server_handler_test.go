@@ -160,7 +160,7 @@ func TestServerDefaultCollections(t *testing.T) {
 								{Key: keyOpStatus, Value: []byte("someError")},
 								{Key: keyService, Value: []byte("package.service")},
 							},
-							newCountAggregationValue(1),
+							newCountData(1),
 						},
 					},
 				},
@@ -243,7 +243,7 @@ func TestServerDefaultCollections(t *testing.T) {
 								{Key: keyOpStatus, Value: []byte("someError1")},
 								{Key: keyService, Value: []byte("package.service")},
 							},
-							newCountAggregationValue(1),
+							newCountData(1),
 						},
 						{
 							[]tag.Tag{
@@ -251,7 +251,7 @@ func TestServerDefaultCollections(t *testing.T) {
 								{Key: keyOpStatus, Value: []byte("someError2")},
 								{Key: keyService, Value: []byte("package.service")},
 							},
-							newCountAggregationValue(1),
+							newCountData(1),
 						},
 					},
 				},
@@ -374,13 +374,13 @@ func TestServerDefaultCollections(t *testing.T) {
 	}
 }
 
-func newCountAggregationValue(v int) *istats.CountAggregationValue {
-	cav := istats.CountAggregationValue(v)
+func newCountData(v int) *istats.CountData {
+	cav := istats.CountData(v)
 	return &cav
 }
 
-func newDistributionAggregationValue(bounds []float64, countPerBucket []int64, count int64, min, max, mean, sumOfSquaredDev float64) *istats.DistributionAggregationValue {
-	return &istats.DistributionAggregationValue{
+func newDistributionAggregationValue(bounds []float64, countPerBucket []int64, count int64, min, max, mean, sumOfSquaredDev float64) *istats.DistributionData {
+	return &istats.DistributionData{
 		Count:           count,
 		Min:             min,
 		Max:             max,

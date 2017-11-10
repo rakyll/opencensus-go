@@ -235,13 +235,13 @@ func newPoint(row *stats.Row, start, end time.Time) *monitoringpb.Point {
 
 func newTypedValue(r *stats.Row) *monitoringpb.TypedValue {
 	switch r.AggregationValue.(type) {
-	case *stats.CountAggregationValue:
-		v := r.AggregationValue.(*stats.CountAggregationValue)
+	case *stats.CountData:
+		v := r.AggregationValue.(*stats.CountData)
 		return &monitoringpb.TypedValue{Value: &monitoringpb.TypedValue_Int64Value{
 			Int64Value: int64(*v),
 		}}
-	case *stats.DistributionAggregationValue:
-		v := r.AggregationValue.(*stats.DistributionAggregationValue)
+	case *stats.DistributionData:
+		v := r.AggregationValue.(*stats.DistributionData)
 		return &monitoringpb.TypedValue{Value: &monitoringpb.TypedValue_DistributionValue{
 			DistributionValue: &distributionpb.Distribution{
 				Count: v.Count,

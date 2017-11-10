@@ -102,12 +102,8 @@ func FindView(name string) (*View, error) {
 // RegisterView registers view. It returns an error if the view cannot be
 // registered. Subsequent calls to Record with the same measure as the one in
 // the view will NOT cause the usage to be recorded unless a consumer is
-// subscribed to the view or ForceCollect for this view is called.
+// subscribed to the view.
 func RegisterView(v *View) error {
-	if v == nil {
-		return errors.New("cannot RegisterView for nil view")
-	}
-
 	req := &registerViewReq{
 		v:   v,
 		err: make(chan error),
@@ -120,9 +116,6 @@ func RegisterView(v *View) error {
 // if the view wasn't registered. All data collected and not reported for the
 // corresponding view will be lost. The view is automatically be unsubscribed.
 func (v *View) Unregister() error {
-	if v == nil {
-		return errors.New("cannot UnregisterView for nil view")
-	}
 	req := &unregisterViewReq{
 		v:   v,
 		err: make(chan error),
@@ -152,34 +145,6 @@ func (v *View) Subscribe() error {
 // view.
 func (v *View) Unsubscribe() error {
 	req := &unsubscribeFromViewReq{
-		v:   v,
-		err: make(chan error),
-	}
-	defaultWorker.c <- req
-	return <-req.err
-}
-
-// ForceCollect starts data collection for this view even if no
-// listeners are subscribed to it.
-func (v *View) ForceCollect() error {
-	if v == nil {
-		return errors.New("cannot for collect nil view")
-	}
-	req := &startForcedCollectionReq{
-		v:   v,
-		err: make(chan error),
-	}
-	defaultWorker.c <- req
-	return <-req.err
-}
-
-// StopForceCollection stops data collection for this
-// view unless at least 1 listener is subscribed to it.
-func (v *View) StopForceCollection() error {
-	if v == nil {
-		return errors.New("cannot stop force collection for nil view")
-	}
-	req := &stopForcedCollectionReq{
 		v:   v,
 		err: make(chan error),
 	}

@@ -42,7 +42,6 @@ type View struct {
 	// start is time when view collection was started originally.
 	start time.Time
 
-	forced     uint32 // 1 if view should collect data if no one is subscribed, use atomic to access
 	subscribed uint32 // 1 if someone is subscribed and data need to be exported, use atomic to access
 
 	collector *collector
@@ -79,26 +78,12 @@ func (v *View) Description() string {
 	return v.description
 }
 
-func (v *View) startForcedCollection() {
-	atomic.StoreUint32(&v.forced, 1)
-}
-
-func (v *View) stopForcedCollection() {
-	atomic.StoreUint32(&v.forced, 0)
-}
-
 func (v *View) subscribe() {
 	atomic.StoreUint32(&v.subscribed, 1)
 }
 
 func (v *View) unsubscribe() {
 	atomic.StoreUint32(&v.subscribed, 0)
-}
-
-// isCollecting returns true if the view is exporting data
-// by subscription or enabled for force collection.
-func (v *View) isCollecting() bool {
-	return atomic.LoadUint32(&v.subscribed) == 1 || atomic.LoadUint32(&v.forced) == 1
 }
 
 // isSubscribed returns true if the view is exporting
@@ -133,7 +118,7 @@ func (v *View) collectedRows(now time.Time) []*Row {
 }
 
 func (v *View) addSample(m *tag.Map, val interface{}, now time.Time) {
-	if !v.isCollecting() {
+	if !v.isSubscribed() {
 		return
 	}
 	sig := string(tag.EncodeOrderedTags(m, v.tagKeys))

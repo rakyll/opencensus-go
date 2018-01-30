@@ -33,117 +33,64 @@ const (
 	tagsVersionID = byte(0)
 )
 
-type encoderGRPC struct {
-	buf               []byte
-	writeIdx, readIdx int
+type encoder struct {
+	buf      []byte
+	writeIdx int
 }
 
-// writeKeyString writes the fieldID '0' followed by the key string and value
-// string.
-func (eg *encoderGRPC) writeTagString(k, v string) {
+// writeKeyString writes the fieldID '0' followed
+// by the key string and value string.
+func (eg *encoder) writeKVString(k, v string) {
 	eg.writeByte(byte(keyTypeString))
-	eg.writeStringWithVarintLen(k)
-	eg.writeStringWithVarintLen(v)
+	eg.writeString(k)
+	eg.writeString(v)
 }
 
-func (eg *encoderGRPC) writeTagUint64(k string, i uint64) {
+func (eg *encoder) writeKVUint64(k string, i uint64) {
 	eg.writeByte(byte(keyTypeInt64))
-	eg.writeStringWithVarintLen(k)
+	eg.writeString(k)
 	eg.writeUint64(i)
 }
 
-func (eg *encoderGRPC) writeTagTrue(k string) {
+func (eg *encoder) writeKVTrue(k string) {
 	eg.writeByte(byte(keyTypeTrue))
-	eg.writeStringWithVarintLen(k)
+	eg.writeString(k)
 }
 
-func (eg *encoderGRPC) writeTagFalse(k string) {
+func (eg *encoder) writeKVFalse(k string) {
 	eg.writeByte(byte(keyTypeFalse))
-	eg.writeStringWithVarintLen(k)
+	eg.writeString(k)
 }
 
-func (eg *encoderGRPC) writeBytesWithVarintLen(bytes []byte) {
+func (eg *encoder) writeBytes(bytes []byte) {
 	length := len(bytes)
-
 	eg.growIfRequired(binary.MaxVarintLen64 + length)
 	eg.writeIdx += binary.PutUvarint(eg.buf[eg.writeIdx:], uint64(length))
 	copy(eg.buf[eg.writeIdx:], bytes)
 	eg.writeIdx += length
 }
 
-func (eg *encoderGRPC) writeStringWithVarintLen(s string) {
+func (eg *encoder) writeString(s string) {
 	length := len(s)
-
 	eg.growIfRequired(binary.MaxVarintLen64 + length)
 	eg.writeIdx += binary.PutUvarint(eg.buf[eg.writeIdx:], uint64(length))
 	copy(eg.buf[eg.writeIdx:], s)
 	eg.writeIdx += length
 }
 
-func (eg *encoderGRPC) writeByte(v byte) {
+func (eg *encoder) writeByte(v byte) {
 	eg.growIfRequired(1)
 	eg.buf[eg.writeIdx] = v
 	eg.writeIdx++
 }
 
-func (eg *encoderGRPC) writeUint32(i uint32) {
-	eg.growIfRequired(4)
-	binary.LittleEndian.PutUint32(eg.buf[eg.writeIdx:], i)
-	eg.writeIdx += 4
-}
-
-func (eg *encoderGRPC) writeUint64(i uint64) {
+func (eg *encoder) writeUint64(i uint64) {
 	eg.growIfRequired(8)
 	binary.LittleEndian.PutUint64(eg.buf[eg.writeIdx:], i)
 	eg.writeIdx += 8
 }
 
-func (eg *encoderGRPC) readByte() byte {
-	b := eg.buf[eg.readIdx]
-	eg.readIdx++
-	return b
-}
-
-func (eg *encoderGRPC) readUint32() uint32 {
-	i := binary.LittleEndian.Uint32(eg.buf[eg.readIdx:])
-	eg.readIdx += 4
-	return i
-}
-
-func (eg *encoderGRPC) readUint64() uint64 {
-	i := binary.LittleEndian.Uint64(eg.buf[eg.readIdx:])
-	eg.readIdx += 8
-	return i
-}
-
-func (eg *encoderGRPC) readBytesWithVarintLen() ([]byte, error) {
-	if eg.readEnded() {
-		return nil, fmt.Errorf("unexpected end while readBytesWithVarintLen '%x' starting at idx '%v'", eg.buf, eg.readIdx)
-	}
-	length, valueStart := binary.Uvarint(eg.buf[eg.readIdx:])
-	if valueStart <= 0 {
-		return nil, fmt.Errorf("unexpected end while readBytesWithVarintLen '%x' starting at idx '%v'", eg.buf, eg.readIdx)
-	}
-
-	valueStart += eg.readIdx
-	valueEnd := valueStart + int(length)
-	if valueEnd > len(eg.buf) {
-		return nil, fmt.Errorf("malformed encoding: length:%v, upper:%v, maxLength:%v", length, valueEnd, len(eg.buf))
-	}
-
-	eg.readIdx = valueEnd
-	return eg.buf[valueStart:valueEnd], nil
-}
-
-func (eg *encoderGRPC) readStringWithVarintLen() (string, error) {
-	bytes, err := eg.readBytesWithVarintLen()
-	if err != nil {
-		return "", err
-	}
-	return string(bytes), nil
-}
-
-func (eg *encoderGRPC) growIfRequired(expected int) {
+func (eg *encoder) growIfRequired(expected int) {
 	if len(eg.buf)-eg.writeIdx < expected {
 		tmp := make([]byte, 2*(len(eg.buf)+1)+expected)
 		copy(tmp, eg.buf)
@@ -151,60 +98,89 @@ func (eg *encoderGRPC) growIfRequired(expected int) {
 	}
 }
 
-func (eg *encoderGRPC) readEnded() bool {
+type decoder struct {
+	buf     []byte
+	readIdx int
+}
+
+func (eg *decoder) readByte() byte {
+	b := eg.buf[eg.readIdx]
+	eg.readIdx++
+	return b
+}
+
+func (eg *decoder) readUint64() uint64 {
+	i := binary.LittleEndian.Uint64(eg.buf[eg.readIdx:])
+	eg.readIdx += 8
+	return i
+}
+
+func (eg *decoder) readBytes() ([]byte, error) {
+	if eg.ended() {
+		return nil, fmt.Errorf("unexpected end while readBytes '%x' starting at idx '%v'", eg.buf, eg.readIdx)
+	}
+	length, start := binary.Uvarint(eg.buf[eg.readIdx:])
+	if start <= 0 {
+		return nil, fmt.Errorf("unexpected end while readBytes '%x' starting at idx '%v'", eg.buf, eg.readIdx)
+	}
+
+	start += eg.readIdx
+	end := start + int(length)
+	if end > len(eg.buf) {
+		return nil, fmt.Errorf("malformed encoding; length: %v, upper: %v, maxLength: %v", length, end, len(eg.buf))
+	}
+
+	eg.readIdx = end
+	return eg.buf[start:end], nil
+}
+
+func (eg *decoder) ended() bool {
 	return eg.readIdx >= len(eg.buf)
 }
 
-func (eg *encoderGRPC) bytes() []byte {
+func (eg *encoder) bytes() []byte {
 	return eg.buf[:eg.writeIdx]
 }
 
 // Encode encodes the tag map into a []byte. It is useful to propagate
 // the tag maps on wire in binary format.
 func Encode(m *Map) []byte {
-	eg := &encoderGRPC{
-		buf: make([]byte, len(m.m)),
-	}
+	enc := &encoder{buf: make([]byte, 128*len(m.m))} // TODO(jbd): Start with a more reasonable size.
 
-	eg.writeByte(byte(tagsVersionID))
+	enc.writeByte(byte(tagsVersionID))
 	for k, v := range m.m {
-		eg.writeByte(byte(keyTypeString))
-		eg.writeStringWithVarintLen(k.name)
-		eg.writeBytesWithVarintLen([]byte(v))
+		enc.writeByte(byte(keyTypeString))
+		enc.writeString(k.name)
+		enc.writeString(v)
 	}
-
-	return eg.bytes()
+	return enc.bytes()
 }
 
 // Decode  decodes the given []byte into a tag map.
-func Decode(bytes []byte) (*Map, error) {
+func Decode(buf []byte) (*Map, error) {
 	ts := newMap(0)
-
-	eg := &encoderGRPC{
-		buf: bytes,
-	}
-	if len(eg.buf) == 0 {
+	if len(buf) == 0 {
 		return ts, nil
 	}
 
-	version := eg.readByte()
+	d := &decoder{buf: buf}
+	version := d.readByte()
 	if version > tagsVersionID {
 		return nil, fmt.Errorf("cannot decode: unsupported version: %q; supports only up to: %q", version, tagsVersionID)
 	}
 
-	for !eg.readEnded() {
-		typ := keyType(eg.readByte())
-
+	for !d.ended() {
+		typ := keyType(d.readByte())
 		if typ != keyTypeString {
 			return nil, fmt.Errorf("cannot decode: invalid key type: %q", typ)
 		}
 
-		k, err := eg.readBytesWithVarintLen()
+		k, err := d.readBytes()
 		if err != nil {
 			return nil, err
 		}
 
-		v, err := eg.readBytesWithVarintLen()
+		v, err := d.readBytes()
 		if err != nil {
 			return nil, err
 		}

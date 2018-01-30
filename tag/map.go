@@ -16,10 +16,8 @@
 package tag
 
 import (
-	"bytes"
 	"context"
 	"fmt"
-	"sort"
 )
 
 // Tag is a key value pair that can be propagated on wire.
@@ -38,22 +36,6 @@ type Map struct {
 func (m *Map) Value(k Key) (string, bool) {
 	v, ok := m.m[k]
 	return v, ok
-}
-
-func (m *Map) String() string {
-	var keys []Key
-	for k := range m.m {
-		keys = append(keys, k)
-	}
-	sort.Slice(keys, func(i, j int) bool { return keys[i].Name() < keys[j].Name() })
-
-	var buffer bytes.Buffer
-	buffer.WriteString("{ ")
-	for _, k := range keys {
-		buffer.WriteString(fmt.Sprintf("{%v %v}", k.name, m.m[k]))
-	}
-	buffer.WriteString(" }")
-	return buffer.String()
 }
 
 func (m *Map) insert(k Key, v string) {
@@ -188,3 +170,26 @@ type mutator struct {
 func (m *mutator) Mutate(t *Map) (*Map, error) {
 	return m.fn(t)
 }
+
+// FromContext returns the tag map stored in the context.
+func FromContext(ctx context.Context) *Map {
+	// The returned tag map shouldn't be mutated.
+	ts := ctx.Value(mapCtxKey)
+	if ts == nil {
+		return newMap(0)
+	}
+	return ts.(*Map)
+}
+
+// NewContext creates a new context with the given tag map.
+// To propagate a tag map to downstream methods and downstream RPCs, add a tag map
+// to the current context. NewContext will return a copy of the current context,
+// and put the tag map into the returned one.
+// If there is already a tag map in the current context, it will be replaced with m.
+func NewContext(ctx context.Context, m *Map) context.Context {
+	return context.WithValue(ctx, mapCtxKey, m)
+}
+
+type ctxKey struct{}
+
+var mapCtxKey = ctxKey{}

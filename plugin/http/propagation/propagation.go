@@ -39,34 +39,33 @@ func (f *HTTPFormat) FromRequest(req *http.Request) (sc trace.SpanContext, ok bo
 	if h == "" {
 		return trace.SpanContext{}, false
 	}
-	parts := strings.Split(h, "-")
-	if len(parts) < 3 {
+	sections := strings.Split(h, "-")
+	if len(sections) < 3 {
 		return trace.SpanContext{}, false
 	}
 
-	ver, err := hex.DecodeString(parts[0])
+	ver, err := hex.DecodeString(sections[0])
 	if err != nil {
 		return trace.SpanContext{}, false
 	}
-	if len(ver) < 0 || int(ver[0]) > supportedVersion {
-		// TODO(jbd): Log that version is not supported.
+	if len(ver) == 0 || int(ver[0]) > supportedVersion {
 		return trace.SpanContext{}, false
 	}
 
-	tid, err := hex.DecodeString(parts[1])
+	tid, err := hex.DecodeString(sections[1])
 	if err != nil {
 		return trace.SpanContext{}, false
 	}
 	copy(sc.TraceID[:], tid)
 
-	sid, err := hex.DecodeString(parts[2])
+	sid, err := hex.DecodeString(sections[2])
 	if err != nil {
 		return trace.SpanContext{}, false
 	}
 	copy(sc.SpanID[:], sid)
 
-	if len(parts) == 4 {
-		opts, err := hex.DecodeString(parts[3])
+	if len(sections) == 4 {
+		opts, err := hex.DecodeString(sections[3])
 		if err != nil || len(opts) < 1 {
 			return trace.SpanContext{}, false
 		}

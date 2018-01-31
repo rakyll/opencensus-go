@@ -56,15 +56,16 @@ func TestHTTPFormat_FromRequest(t *testing.T) {
 			wantOk: true,
 		},
 		{
-			name:   "malformed options",
+			name:   "missing options",
 			header: "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-",
 			wantSc: trace.SpanContext{},
 			wantOk: false,
 		},
 	}
+
+	f := &HTTPFormat{}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			f := &HTTPFormat{}
 			req, _ := http.NewRequest("GET", "http://example.com", nil)
 			req.Header.Set("TraceContext", tt.header)
 

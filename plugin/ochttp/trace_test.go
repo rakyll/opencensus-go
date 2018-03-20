@@ -351,24 +351,12 @@ func TestSpanNameFromURL(t *testing.T) {
 		want   string
 	}{
 		{
-			prefix: "Sent",
-			u:      "http://localhost:80/hello?q=a",
-			want:   "Sent.localhost/hello",
+			u:    "http://localhost:80/hello?q=a",
+			want: "/hello",
 		},
 		{
-			prefix: "Recv",
-			u:      "https://localhost:443/a",
-			want:   "Recv.localhost/a",
-		},
-		{
-			prefix: "Recv",
-			u:      "https://example.com:7654/a",
-			want:   "Recv.example.com:7654/a",
-		},
-		{
-			prefix: "Sent",
-			u:      "/a/b?q=c",
-			want:   "Sent./a/b",
+			u:    "/a/b?q=c",
+			want: "/a/b",
 		},
 	}
 	for _, tt := range tests {
@@ -377,7 +365,7 @@ func TestSpanNameFromURL(t *testing.T) {
 			if err != nil {
 				t.Errorf("url.Parse() = %v", err)
 			}
-			if got := spanNameFromURL(tt.prefix, u); got != tt.want {
+			if got := spanNameFromURL(u); got != tt.want {
 				t.Errorf("spanNameFromURL() = %v, want %v", got, tt.want)
 			}
 		})

@@ -71,6 +71,7 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) startTrace(w http.ResponseWriter, r *http.Request) (*http.Request, func()) {
+	h.StartOptions.SpanKind = trace.SpanKindServer
 	name := spanNameFromURL(r.URL)
 	ctx := r.Context()
 	var span *trace.Span

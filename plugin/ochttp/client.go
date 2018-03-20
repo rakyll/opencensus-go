@@ -45,6 +45,7 @@ type Transport struct {
 
 // RoundTrip implements http.RoundTripper, delegating to Base and recording stats and traces for the request.
 func (t *Transport) RoundTrip(req *http.Request) (*http.Response, error) {
+	t.StartOptions.SpanKind = trace.SpanKindClient
 	rt := t.base()
 	// TODO: remove excessive nesting of http.RoundTrippers here.
 	format := t.Propagation

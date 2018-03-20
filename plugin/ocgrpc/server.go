@@ -46,6 +46,8 @@ type ServerHandler struct {
 	// ensures that each service has some opportunity to be traced. If you would
 	// like to not add any additional traces for this gRPC service, set:
 	//   StartOptions.Sampler = trace.ProbabilitySampler(0.0)
+	//
+	// SpanKind will always set to SpanKindServer for spans started from this handler.
 	StartOptions trace.StartOptions
 }
 

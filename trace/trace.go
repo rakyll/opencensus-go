@@ -20,6 +20,7 @@ import (
 	"encoding/binary"
 	"fmt"
 	"math/rand"
+	rtrace "runtime/trace"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -44,6 +45,8 @@ type Span struct {
 	// spanStore is the spanStore this span belongs to, if any, otherwise it is nil.
 	*spanStore
 	exportOnce sync.Once
+
+	ender func()
 }
 
 // IsRecordingEvents returns true if events are being recorded for this span.
@@ -134,6 +137,8 @@ type StartOptions struct {
 func StartSpan(ctx context.Context, name string) (context.Context, *Span) {
 	parentSpan, _ := ctx.Value(contextKey{}).(*Span)
 	span := NewSpan(name, parentSpan, StartOptions{})
+	ctx, ender := rtrace.NewContext(ctx, name)
+	span.ender = ender
 	return WithSpan(ctx, span), span
 }
 
@@ -157,6 +162,8 @@ func NewSpanWithRemoteParent(name string, parent SpanContext, o StartOptions) *S
 
 func startSpanInternal(name string, hasParent bool, parent SpanContext, remoteParent bool, o StartOptions) *Span {
 	span := &Span{}
+	end := rtrace.StartSpan(context.Background(), name)
+	span.ender = end
 	span.spanContext = parent
 
 	cfg := config.Load().(*Config)
@@ -214,6 +221,9 @@ func startSpanInternal(name string, hasParent bool, parent SpanContext, remotePa
 func (s *Span) End() {
 	if !s.IsRecordingEvents() {
 		return
+	}
+	if s.ender != nil {
+		s.ender()
 	}
 	s.exportOnce.Do(func() {
 		// TODO: optimize to avoid this call if sd won't be used.
